@@ -15,6 +15,7 @@ app.use(
     dnsPrefetchControl: false,
     contentSecurityPolicy: {
       directives: {
+        // Allows loading of scripts and CSS from your server only.
         scriptSrc: ["'self'"],
         styleSrc: ["'self'"],
       },
