@@ -10,7 +10,16 @@ const fccTestingRoutes = require("./routes/fcctesting.js");
 const runner = require("./test-runner");
 
 const app = express();
-app.use(helmet());
+app.use(
+  helmet({
+    dnsPrefetchControl: false,
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+      },
+    },
+  })
+);
 
 app.use("/public", express.static(process.cwd() + "/public"));
 
@@ -21,6 +30,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 //Index page (static HTML)
 app.route("/").get(function (req, res) {
+  instag;
   res.sendFile(process.cwd() + "/views/index.html");
 });
 
