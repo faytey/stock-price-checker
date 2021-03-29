@@ -15,7 +15,8 @@ app.use(
     dnsPrefetchControl: false,
     contentSecurityPolicy: {
       directives: {
-        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'"],
       },
     },
   })
