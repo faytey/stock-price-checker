@@ -48,9 +48,6 @@ module.exports = function (app) {
     let likeTrue = req.query.like; // return
     let likeValue = 0;
     let price = await getPrice(stockName);
-    let options = { new: true };
-    let update; // check to see if the ip address already exists in db. If not add a like. If so only update to latest price
-    // console.log("upadate the found model in db");
 
     if (!stockName) return console.log("missing stockName");
     // If there is only one stock
@@ -59,12 +56,11 @@ module.exports = function (app) {
       if (price.length == 0) {
         return res.json({ error: "invalid symbol input" });
       } else {
-        // create and save model here?
+        // create and save model here
         Stock.findOneAndUpdate(
           { stock: stockName },
-          update, // Set in beginning of route
-          options, // Set in beginning of route
-          (error, result) => {
+          { new: true }, // Need to show updated/new version
+          async (error, result) => {
             if (error) return console.log(error);
 
             // If not error and not result then the db does not have stock and we need to create/add it into db.
@@ -89,20 +85,38 @@ module.exports = function (app) {
                     stockData: {
                       stock: stockName,
                       price: price,
-                      likes: stock.likes,
+                      likes: stock.likes, // increments no matter what. We want option of when ip address is in ips array then it won't increase
                     },
                   });
                 }
               });
-            } else if (!error && result) {
-              console.log("handle updated stock");
+            }
+            // If stock is already in database. Update it
+            else if (!error && result) {
+              // set howManylikes to the amount of likes in db.
+              let howManyLikes = result.likes;
+
+              // If the ip is not in database then add a like. If ip is in database then don't add a like
+              let stockHasIp = await Stock.findOne(
+                { ips: ipa },
+                (error, result) => {
+                  if (error) return error;
+                  else if (!error && !result) return false;
+                  else if (!error && result) {
+                    console.log(result, "<= ipa existing in ips");
+                    return true;
+                  }
+                }
+              );
+
+              // If stock in databse does not have ip address then add one to howManyLikes
+              if (!stockHasIp) howManyLikes += 1;
+
               return res.json({
                 stockData: {
                   stock: stockName,
-                  price: price,
-                  likes: 100,
-                  note:
-                    "Find a way to search through and see if current ip address is in this stock. If not and like is true then increment",
+                  price: price, // will get latest price
+                  likes: howManyLikes, // Will add one if stock does not have ip
                 },
               });
             }
