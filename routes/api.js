@@ -45,43 +45,26 @@ module.exports = function (app) {
   const getStock = async (stockName, ipa, likeTrue) => {
     let price = await getPrice(stockName);
     let likeValue = 0;
+    if (likeTrue) {
+      likeValue = 1; // use this value when creating new stock model
+    }
     let stockReturn = Stock.findOneAndUpdate(
       { stock: stockName },
-      { new: true }, // Need to show updated/new version
+      {
+        // If there is no stock then upsert will create new one with these key:values set on insert
+        $setOnInsert: {
+          stock: stockName,
+          price: price,
+          like: likeValue,
+          ips: ipa,
+        },
+      },
+      { new: true, upsert: true }, // Need to show updated/new version
       async (error, result) => {
         if (error) return console.log(error);
 
-        // If not error and not result then the db does not have stock and we need to create/add it into db.
-        if (!error && !result) {
-          // if the like query exists set likeeValue to one. If none it remains 0.
-          if (likeTrue) {
-            likeValue = 1; // use this value when creating new stock model
-          }
-          // create new model
-          let stock = new Stock({
-            stock: stockName,
-            price: price,
-            likes: likeValue,
-            ips: ipa, // ip address of the user
-          });
-
-          // save the new model to db
-          stock.save((err, stock) => {
-            if (err) return console.error(err);
-            else {
-              return {
-                stockData: {
-                  stock: stockName,
-                  price: price,
-                  likes: stock.likes, // increments no matter what. We want option of when ip address is in ips array then it won't increase
-                },
-              };
-            }
-          });
-        }
-
         // If stock is already in database. Update it
-        else if (!error && result) {
+        if (!error && result) {
           // set howManylikes to the amount of likes in db.
           let howManyLikes = result.likes;
 
@@ -96,17 +79,8 @@ module.exports = function (app) {
               }
             }
           );
-
           // If stock in databse does not have ip address then add one to howManyLikes
           if (!stockHasIp) howManyLikes += 1;
-
-          return {
-            stockData: {
-              stock: stockName,
-              price: price, // will get latest price
-              likes: howManyLikes, // Will add one if stock does not have ip
-            },
-          };
         }
       }
     );
@@ -130,7 +104,13 @@ module.exports = function (app) {
       if (price.length == 0) {
         return res.json({ error: "invalid symbol input" });
       } else {
-        return res.json(returnObject);
+        return res.json({
+          stockData: {
+            stock: stockName,
+            price: returnObject.price,
+            likes: returnObject.likes,
+          },
+        });
       }
     }
 
