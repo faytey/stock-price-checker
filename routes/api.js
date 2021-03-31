@@ -16,9 +16,9 @@ module.exports = function (app) {
 
   const stockSchema = new Schema({
     stock: { type: String, required: true },
-    price: { type: Number, default: 0 },
-    likes: { type: Number, default: 0 },
-    ips: [String], // Need this so only 1 like can be given by an ip. (check if ip is in db and if not add like...)
+    price: { type: Number, default: 0, required: true },
+    likes: { type: Number, default: 0, required: true },
+    ips: { type: [String], default: [], required: true }, // Need this so only 1 like can be given by an ip. (check if ip is in db and if not add like...)
   });
 
   const Stock = mongoose.model("Stock", stockSchema);
@@ -42,46 +42,58 @@ module.exports = function (app) {
     return latestPrice;
   };
 
-  const getStock = async (stockName, ipa, likeTrue) => {
+  const getStockwithNotTrue = async (stockName, documentUpdate) => {
     let price = await getPrice(stockName);
-    let likeValue = 0;
-    if (likeTrue) {
-      likeValue = 1; // use this value when creating new stock model
-    }
-    let stockReturn = Stock.findOneAndUpdate(
+    let stockReturn = await Stock.findOneAndUpdate(
       { stock: stockName },
-      {
-        // If there is no stock then upsert will create new one with these key:values set on insert
-        $setOnInsert: {
-          stock: stockName,
-          price: price,
-          like: likeValue,
-          ips: ipa,
-        },
-      },
+      documentUpdate, // Will update whatever this variable tells it to if found
       { new: true, upsert: true }, // Need to show updated/new version
-      async (error, result) => {
+      async (error, stock) => {
         if (error) return console.log(error);
-
-        // If stock is already in database. Update it
-        if (!error && result) {
-          // set howManylikes to the amount of likes in db.
-          let howManyLikes = result.likes;
-
-          // If the ip is not in database then add a like. If ip is in database then don't add a like
-          let stockHasIp = await Stock.findOne(
-            { stock: stockName, ips: ipa },
-            (error, result) => {
-              if (error) return error;
-              else if (!error && !result) return false;
-              else if (!error && result) {
-                return true;
-              }
-            }
-          );
-          // If stock in databse does not have ip address then add one to howManyLikes
-          if (!stockHasIp) howManyLikes += 1;
+        if (!error && !stock) {
+          // If no result then a new model must be created (must change what result is.)
+          stock = new Stock({
+            stock: stockName,
+            price: price,
+            likes: 0,
+            ips: [],
+          });
         }
+        // Save either the new stock or the updated stock to db
+        stock.save((error, result) => {
+          if (error) return console.log(error);
+          else return result;
+        });
+      }
+    );
+
+    // Be sure to return the stock outside of the findOne to return a value from the function
+    return stockReturn;
+  };
+
+  const getStockWithTrue = async (stockName, updateDocument) => {
+    let price = await getPrice(stockName);
+    let stockReturn = await Stock.findOneAndUpdate(
+      { stock: stockName },
+      updateDocument,
+      { new: true, upsert: true }, // Need to show updated/new version
+      async (error, stock) => {
+        if (error) return console.log(error);
+        // If stock is not already in database
+        if (!error && !stock) {
+          // If no result then a new model must be created (must change what result is.)
+          stock = new Stock({
+            stock: stockName,
+            price: price,
+            likes: 1,
+            ips: ipa,
+          });
+        }
+        // Save either the new stock
+        stock.save((error, result) => {
+          if (error) return console.log(error);
+          else return result;
+        });
       }
     );
 
@@ -93,15 +105,52 @@ module.exports = function (app) {
     let stockName = req.query.stock;
     let ipa = req.connection.remoteAddress; // ip address of the user
     let likeTrue = req.query.like; // return
+    let returnObject;
+    let documentUpdate = {};
+    let price;
 
     if (!stockName) return console.log("missing stockName");
     // If there is only one stock
     else if (typeof stockName == "string") {
-      let price = await getPrice(stockName);
-      let returnObject = await getStock(stockName, ipa, likeTrue);
-      console.log(returnObject, "<= returnObject");
+      stockName = req.query.stock.toUpperCase();
+      price = await getPrice(stockName);
+
+      // if likeTrue query is not given
+      if (!likeTrue) {
+        // If found updates only thing that needs to be which is price because name and ips array will remain the same.
+        documentUpdate = { $set: { price: price } };
+        returnObject = await getStockwithNotTrue(stockName, documentUpdate);
+      }
+
+      // If likeTrue is true
+      else if (likeTrue && likeTrue == "true") {
+        // Check and see if the stock is in db and if ipa exists in ips array. If so they can't be allowed to add a like.
+        let stockHasIp = await Stock.findOne(
+          { stock: stockName, ips: ipa },
+          (error, result) => {
+            if (error) return error;
+            else if (!error && !result) return false;
+            else if (!error && result) {
+              return true;
+            }
+          }
+        );
+
+        // If stock has ip address then don't update and send error message
+        if (stockHasIp) {
+          return res.json({ error: "only 1 like per IP address." });
+        } else {
+          documentUpdate = {
+            $set: { price: price },
+            $push: { ips: ipa },
+            $inc: { likes: 1 },
+          };
+          returnObject = await getStockWithTrue(stockName, documentUpdate);
+        }
+      }
+
       // If there is no price length that means the symbol is not supported
-      if (price.length == 0) {
+      if (!price) {
         return res.json({ error: "invalid symbol input" });
       } else {
         return res.json({
@@ -116,17 +165,32 @@ module.exports = function (app) {
 
     // If there are two stocks
     else {
+      let stock1;
+      let stock2;
+      let price1 = await getPrice(stockName[0]);
+      let price2 = await getPrice(stockName[1]);
       // set up first responseStock for array (do findOneAndUpdate for rel_likes)
       let responseStock1 = {};
-      responseStock1["stock"] = stockName[0];
+      responseStock1["stock"] = stockName[0].toUpperCase();
 
       // set up second responseStock for array (do findOneAndUpdate for rel_likes)
       let responseStock2 = {};
-      responseStock2["stock"] = stockName[1];
+      responseStock2["stock"] = stockName[1].toUpperCase();
 
       // Run function getStock to add both stocks to db or update it if it is already there.
-      let stock1 = await getStock(stockName[0], ipa, likeTrue);
-      let stock2 = await getStock(stockName[1], ipa, likeTrue);
+      if (!likeTrue) {
+        // If found updates only thing that needs to be which is price because name and ips array will remain the same.
+        documentUpdate = { $set: { price: price1 } };
+        stock1 = await getStockwithNotTrue(
+          stockName[0].toUpperCase(),
+          documentUpdate
+        );
+        documentUpdate = { $set: { price: price2 } };
+        stock2 = await getStockwithNotTrue(
+          stockName[1].toUpperCase(),
+          documentUpdate
+        );
+      }
 
       // Give responseStocks price key:value
       responseStock1["price"] = stock1.price;
