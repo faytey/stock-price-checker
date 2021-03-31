@@ -136,21 +136,21 @@ module.exports = function (app) {
 
     // If there are two stocks
     else {
-      let priceStock1 = await getPrice(stockName[0]);
-      let priceStock2 = await getPrice(stockName[1]);
       // set up first responseStock for array (do findOneAndUpdate for rel_likes)
       let responseStock1 = {};
       responseStock1["stock"] = stockName[0];
-      responseStock1["price"] = priceStock1;
 
       // set up second responseStock for array (do findOneAndUpdate for rel_likes)
       let responseStock2 = {};
       responseStock2["stock"] = stockName[1];
-      responseStock2["price"] = priceStock2;
 
       // Run function getStock to add both stocks to db or update it if it is already there.
       let stock1 = await getStock(stockName[0], ipa, likeTrue);
       let stock2 = await getStock(stockName[1], ipa, likeTrue);
+
+      // Give responseStocks price key:value
+      responseStock1["price"] = stock1.price;
+      responseStock2["price"] = stock2.price;
 
       // Get the value for each of their likes
       let stock1Likes = stock1.likes;
