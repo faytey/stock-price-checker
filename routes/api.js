@@ -43,57 +43,21 @@ module.exports = function (app) {
   };
 
   const getStockWithNotTrue = async (stockName, documentUpdate) => {
-    let price = await getPrice(stockName);
     let stockReturn = await Stock.findOneAndUpdate(
       { stock: stockName },
       documentUpdate, // Will update whatever this variable tells it to if found
-      { new: true, upsert: true }, // Need to show updated/new version
-      async (error, stock) => {
-        if (error) return console.log(error);
-        if (!error && !stock) {
-          // If no result then a new model must be created (must change what result is.)
-          stock = new Stock({
-            stock: stockName,
-            price: price,
-            likes: 0,
-            ips: [],
-          });
-        }
-        // Save either the new stock or the updated stock to db
-        stock.save((error, result) => {
-          if (error) return console.log(error);
-          else return result;
-        });
-      }
+      { new: true, upsert: true } // upsert creates new doc if not there
     );
 
     // Be sure to return the stock outside of the findOne to return a value from the function
     return stockReturn;
   };
 
-  const getStockWithTrue = (stockName, updateDocument, price) => {
+  const getStockWithTrue = (stockName, updateDocument) => {
     return Stock.findOneAndUpdate(
       { stock: stockName },
       updateDocument,
-      { new: true, upsert: true }, // Need to show updated/new version
-      (error, stock) => {
-        if (error) return console.log(error);
-        // If stock is not already in database
-        if (!error && !stock) {
-          // If no result then a new model must be created (must change what result is.)
-          stock = new Stock({
-            stock: stockName,
-            price: price,
-            likes: 1,
-            ips: ipa,
-          });
-        }
-        // Save the new stock
-        stock.save((error, result) => {
-          if (error) return console.log(error);
-          else return result;
-        });
-      }
+      { new: true, upsert: true } // Upsert creates new model if it doesn't exist with the updateDocument setting key:values
     );
   };
 
@@ -123,7 +87,7 @@ module.exports = function (app) {
       else if (likeTrue && likeTrue == "true") {
         // Check and see if the stock is in db and if ipa exists in ips array. If so they can't be allowed to add a like.
         stockHasIp = await Stock.findOne(
-          { stock: stockName, ips: ipa },
+          { stock: stockName.toUpperCase(), ips: ipa },
           (error, result) => {
             if (error) return error;
             else if (!error && result) {
@@ -139,20 +103,15 @@ module.exports = function (app) {
           documentUpdate = {
             $set: { price: price },
             $addToSet: { ips: ipa }, // $addToSet only pushes in array if it doesn't exist. Need this instead of push because await runs update twice
-            $inc: { likes: 0.5 }, // For some reason it keeps on adding double of the inc so we do this instead
+            $inc: { likes: 1 },
           };
 
-          // DOES UPDATE DOUBLE BC OF AWAIT CALL HERE. MUST FIND A WAY TO GET RID OF AWAIT AND STILL RETURN A CORRECT RESPONSE BASED OFF WHAT IS IN DATABASE
-          returnObject = await getStockWithTrue(
-            stockName,
-            documentUpdate,
-            price
-          );
+          returnObject = await getStockWithTrue(stockName, documentUpdate);
           //console.log(returnObject, "<= returnObject with await");
         }
       }
 
-      // If there is no price length that means the symbol is not supported
+      // If there is no price that means the symbol is not supported
       if (!price) {
         return res.json({ error: "invalid symbol input" });
       } else {
@@ -172,6 +131,10 @@ module.exports = function (app) {
       let stock2;
       let price1 = await getPrice(stockName[0]);
       let price2 = await getPrice(stockName[1]);
+      // If there is no price that means the symbol is not supported
+      if (!price1 || !price2) {
+        return res.json({ error: "invalid symbol input" });
+      }
       // set up first responseStock for array (do findOneAndUpdate for rel_likes)
       let responseStock1 = {};
       responseStock1["stock"] = stockName[0].toUpperCase();
@@ -197,8 +160,8 @@ module.exports = function (app) {
         // If found updates only thing that needs to be which is price because name and ips array will remain the same.
         documentUpdate = {
           $set: { price: price1 },
-          $addToSet: { ips: ipa }, // $addToSet only pushes in array if it doesn't exist. Need this instead of push because await runs update twice
-          $inc: { likes: 0.5 }, // For some reason it keeps on adding double of the inc so we do this instead
+          $addToSet: { ips: ipa }, // $addToSet only pushes in array if it doesn't exist.
+          $inc: { likes: 1 }, // For some reason it keeps on adding double of the inc so we do this instead
         };
         stock1 = await getStockWithTrue(
           stockName[0].toUpperCase(),
@@ -206,8 +169,8 @@ module.exports = function (app) {
         );
         documentUpdate = {
           $set: { price: price2 },
-          $addToSet: { ips: ipa }, // $addToSet only pushes in array if it doesn't exist. Need this instead of push because await runs update twice
-          $inc: { likes: 0.5 }, // For some reason it keeps on adding double of the inc so we do this instead
+          $addToSet: { ips: ipa }, // $addToSet only pushes in array if it doesn't exist.
+          $inc: { likes: 1 },
         };
         stock2 = await getStockWithTrue(
           stockName[1].toUpperCase(),
