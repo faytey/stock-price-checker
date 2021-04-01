@@ -20,6 +20,7 @@ suite("Functional Tests", function () {
     done(); // Must put done outtside end here for it to work(not sure why. console.log() said it has something to do with the fact we are dealing with promises and async/wait functions)
   });
 
+  // DOESN'T WORK BECAUSE PUSHES AND INCREASES TWICE AND DO NOT KNOW WHY
   test("Viewing one stock and liking it: GET request to /api/stock-prices/", (done) => {
     chai
       .request(server)
@@ -33,12 +34,14 @@ suite("Functional Tests", function () {
     done(); // Must put done outtside end here for it to work(not sure why. console.log() said it has something to do with the fact we are dealing with promises and async/wait functions)
   });
 
+  // DOESN'T WORK FOR GOD KNOWS WHY. WORKS WHEN USING IT ON SITE AND REFRESHES
   //   test("Viewing the same stock and liking it again: GET request to /api/stock-prices/", (done) => {
   //     chai
   //       .request(server)
   //       .get("/api/stock-prices")
-  //       .query({ stock: "aapl", like: true })
+  //       .query({ stock: "GE", like: true })
   //       .end((err, res) => {
+  //         console.log(res.body, "<= res.body");
   //         assert.equal(res.body.error, "only 1 like per IP address.");
   //       });
   //     done(); // Must put done outtside end here for it to work(not sure why. console.log() said it has something to do with the fact we are dealing with promises and async/wait functions)
@@ -48,11 +51,12 @@ suite("Functional Tests", function () {
     chai
       .request(server)
       .get("/api/stock-prices")
-      .query({ stock: ["aapl", "msft"] })
+      .query({ stock: ["ge", "msft"] })
       .end((err, res) => {
+        console.log(res.body, "<= res.body");
         assert.equal(res.status, 200);
         assert.isArray(res.body.stockData);
-        assert.equal(res.body.stockData[0].stock, "AAPL");
+        assert.equal(res.body.stockData[0].stock, "ge");
         assert.isNotNull(res.body.stockData[0].price);
         assert.isNotNull(res.body.stockData[0].rel_likes);
 

@@ -42,7 +42,7 @@ module.exports = function (app) {
     return latestPrice;
   };
 
-  const getStockwithNotTrue = async (stockName, documentUpdate) => {
+  const getStockWithNotTrue = async (stockName, documentUpdate) => {
     let price = await getPrice(stockName);
     let stockReturn = await Stock.findOneAndUpdate(
       { stock: stockName },
@@ -71,13 +71,12 @@ module.exports = function (app) {
     return stockReturn;
   };
 
-  const getStockWithTrue = async (stockName, updateDocument) => {
-    let price = await getPrice(stockName);
-    let stockReturn = await Stock.findOneAndUpdate(
+  const getStockWithTrue = (stockName, updateDocument, price) => {
+    return Stock.findOneAndUpdate(
       { stock: stockName },
       updateDocument,
       { new: true, upsert: true }, // Need to show updated/new version
-      async (error, stock) => {
+      (error, stock) => {
         if (error) return console.log(error);
         // If stock is not already in database
         if (!error && !stock) {
@@ -89,16 +88,13 @@ module.exports = function (app) {
             ips: ipa,
           });
         }
-        // Save either the new stock
+        // Save the new stock
         stock.save((error, result) => {
           if (error) return console.log(error);
           else return result;
         });
       }
     );
-
-    // Be sure to return the stock outside of the findOne to return a value from the function
-    return stockReturn;
   };
 
   app.route("/api/stock-prices").get(async (req, res) => {
@@ -119,7 +115,7 @@ module.exports = function (app) {
       if (!likeTrue) {
         // If found updates only thing that needs to be which is price because name and ips array will remain the same.
         documentUpdate = { $set: { price: price } };
-        returnObject = await getStockwithNotTrue(stockName, documentUpdate);
+        returnObject = await getStockWithNotTrue(stockName, documentUpdate);
       }
 
       // If likeTrue is true
@@ -142,10 +138,17 @@ module.exports = function (app) {
         } else {
           documentUpdate = {
             $set: { price: price },
-            $push: { ips: ipa },
-            $inc: { likes: 1 },
+            $addToSet: { ips: ipa }, // $addToSet only pushes in array if it doesn't exist. Need this instead of push because await runs update twice
+            $inc: { likes: 0.5 }, // For some reason it keeps on adding double of the inc so we do this instead
           };
-          returnObject = await getStockWithTrue(stockName, documentUpdate);
+
+          // DOES UPDATE DOUBLE BC OF AWAIT CALL HERE. MUST FIND A WAY TO GET RID OF AWAIT AND STILL RETURN A CORRECT RESPONSE BASED OFF WHAT IS IN DATABASE
+          returnObject = await getStockWithTrue(
+            stockName,
+            documentUpdate,
+            price
+          );
+          //console.log(returnObject, "<= returnObject with await");
         }
       }
 
@@ -181,12 +184,32 @@ module.exports = function (app) {
       if (!likeTrue) {
         // If found updates only thing that needs to be which is price because name and ips array will remain the same.
         documentUpdate = { $set: { price: price1 } };
-        stock1 = await getStockwithNotTrue(
+        stock1 = await getStockWithNotTrue(
           stockName[0].toUpperCase(),
           documentUpdate
         );
         documentUpdate = { $set: { price: price2 } };
-        stock2 = await getStockwithNotTrue(
+        stock2 = await getStockWithNotTrue(
+          stockName[1].toUpperCase(),
+          documentUpdate
+        );
+      } else if (likeTrue && likeTrue == "true") {
+        // If found updates only thing that needs to be which is price because name and ips array will remain the same.
+        documentUpdate = {
+          $set: { price: price1 },
+          $push: { ips: ipa },
+          $inc: { likes: 1 },
+        };
+        stock1 = await getStockWithTrue(
+          stockName[0].toUpperCase(),
+          documentUpdate
+        );
+        documentUpdate = {
+          $set: { price: price2 },
+          $push: { ips: ipa },
+          $inc: { likes: 1 },
+        };
+        stock2 = await getStockWithTrue(
           stockName[1].toUpperCase(),
           documentUpdate
         );
