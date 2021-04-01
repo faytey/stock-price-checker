@@ -104,6 +104,7 @@ module.exports = function (app) {
     let returnObject;
     let documentUpdate = {};
     let price;
+    let stockHasIp = false;
 
     if (!stockName) return console.log("missing stockName");
     // If there is only one stock
@@ -121,17 +122,16 @@ module.exports = function (app) {
       // If likeTrue is true
       else if (likeTrue && likeTrue == "true") {
         // Check and see if the stock is in db and if ipa exists in ips array. If so they can't be allowed to add a like.
-        let stockHasIp = await Stock.findOne(
+        stockHasIp = await Stock.findOne(
           { stock: stockName, ips: ipa },
           (error, result) => {
             if (error) return error;
-            else if (!error && !result) return false;
             else if (!error && result) {
-              return true;
+              return result;
             }
           }
         );
-
+        console.log(stockHasIp, "<= stockHasIp");
         // If stock has ip address then don't update and send error message
         if (stockHasIp) {
           return res.json({ error: "only 1 like per IP address." });
@@ -197,8 +197,8 @@ module.exports = function (app) {
         // If found updates only thing that needs to be which is price because name and ips array will remain the same.
         documentUpdate = {
           $set: { price: price1 },
-          $push: { ips: ipa },
-          $inc: { likes: 1 },
+          $addToSet: { ips: ipa }, // $addToSet only pushes in array if it doesn't exist. Need this instead of push because await runs update twice
+          $inc: { likes: 0.5 }, // For some reason it keeps on adding double of the inc so we do this instead
         };
         stock1 = await getStockWithTrue(
           stockName[0].toUpperCase(),
@@ -206,8 +206,8 @@ module.exports = function (app) {
         );
         documentUpdate = {
           $set: { price: price2 },
-          $push: { ips: ipa },
-          $inc: { likes: 1 },
+          $addToSet: { ips: ipa }, // $addToSet only pushes in array if it doesn't exist. Need this instead of push because await runs update twice
+          $inc: { likes: 0.5 }, // For some reason it keeps on adding double of the inc so we do this instead
         };
         stock2 = await getStockWithTrue(
           stockName[1].toUpperCase(),
