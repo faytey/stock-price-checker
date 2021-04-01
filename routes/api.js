@@ -42,15 +42,12 @@ module.exports = function (app) {
     return latestPrice;
   };
 
-  const getStockWithNotTrue = async (stockName, documentUpdate) => {
-    let stockReturn = await Stock.findOneAndUpdate(
+  const getStockWithNotTrue = (stockName, documentUpdate) => {
+    return Stock.findOneAndUpdate(
       { stock: stockName },
       documentUpdate, // Will update whatever this variable tells it to if found
       { new: true, upsert: true } // upsert creates new doc if not there
     );
-
-    // Be sure to return the stock outside of the findOne to return a value from the function
-    return stockReturn;
   };
 
   const getStockWithTrue = (stockName, updateDocument) => {
