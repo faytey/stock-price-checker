@@ -1,0 +1,124 @@
+:root {
+  --tint-for-image: rgba(0, 0, 0, 0.2);
+  --tint-for-form: rgba(0, 0, 0, 0.7);
+  --text-color: white;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  /* linear gradient lets you add a layer on image to darken it so text is easier to read */
+  background-image: linear-gradient(
+      var(--tint-for-image),
+      var(--tint-for-image)
+    ),
+    url("https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?ixid=MXwxMjA3fDB8MHxzZWFyY2h8MXx8c3RvY2slMjBtYXJrZXR8ZW58MHx8MHw%3D&ixlib=rb-1.2.1&w=1000&q=80");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  height: 100vh;
+  color: var(--text-color);
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#container {
+  border-radius: 0.5rem;
+  background-color: var(--tint-for-form);
+  padding: 1rem;
+  width: 40rem;
+}
+
+h1 {
+  font-size: 2.5rem;
+  text-align: center;
+}
+
+#firstForm {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+#secondForm {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+h3 {
+  text-align: left;
+  font-weight: 200;
+  font-size: 2rem;
+}
+
+input {
+  font-size: 1rem;
+  padding: 0.5rem 0 0.5rem 0.5rem;
+  border: none;
+  border-radius: 0.5rem;
+  margin-right: 0.5rem;
+}
+
+.likeBoth {
+  font-size: 0.95rem;
+  margin-right: 0.5rem;
+}
+
+button {
+  font-size: 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+}
+
+#jsonResult {
+  display: block;
+  margin-top: 1rem;
+  font-size: 1.4rem;
+  max-width: 95%;
+  word-wrap: break-word;
+}
+
+@media (max-width: 950px) {
+  #container {
+    width: 30rem;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+  }
+
+  input {
+    font-size: 0.8rem;
+    padding: 0.25rem 0 0.25rem 0.25rem;
+    margin-right: 0.25rem;
+  }
+
+  /* Need this so checkbox isn't 8rem as well */
+  .inputStock {
+    width: 8rem;
+  }
+
+  .likeBoth {
+    font-size: 0.8rem;
+    margin-right: 0.25rem;
+  }
+  button {
+    font-size: 0.8rem;
+    padding: 0.25rem;
+  }
+}
+
+footer {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+#footerLink {
+  color: var(--text-color);
+}
+
+#footerLink:hover {
+  filter: brightness(70%);
+}

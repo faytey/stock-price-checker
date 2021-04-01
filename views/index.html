@@ -9,12 +9,7 @@
     <link rel="stylesheet" href="./public/style.css">
   </head>
   <body>
-    <header>
-      <h1>
-        ISQA_5 - Nasdaq Stock Price Checker
-      </h1>
-    </header>
-    <div id='userstories' style='margin-left: 5%; margin-top: 5%'>
+    <!-- <div id='userstories' style='margin-left: 5%; margin-top: 5%'>
       <h3>Example usage:</h3>
       <code>/api/stock-prices?stock=goog</code><br>
       <code>/api/stock-prices?stock=goog&amp;like=true</code><br>
@@ -23,55 +18,42 @@
       <h3>Example return:</h3>
       <code>{"stockData":{"stock":"GOOG","price":786.90,"likes":1}}</code><br>
       <code>{"stockData":[{"stock":"MSFT","price":62.30,"rel_likes":-1},{"stock":"GOOG","price":786.90,"rel_likes":1}]}</code>
-    </div>
-    <hr style='margin: 50px'>
-    <div id='testui' style='margin-left: 5%'>
-      <h2 style="text-align: left">Front-End:</h2>
+    </div> -->
+    <div id='container'>
+      <h1>
+        ISQA_5 - Nasdaq Stock Price Checker
+      </h1>
       <h3>Get single price and total likes</h3>
-      <form id="testForm2" class="border">
-        <input type="text" name="stock" placeholder="goog" style="width: 100px" required=''>
-        <input type="checkbox" name="like" value=true> Like?<br>
-        <button type="submit">Get Price!</button>
-      </form>
+      <div id="firstForm">  
+        <form id="testForm2" class="border">
+          <input class="inputStock" type="text" name="stock" placeholder="goog" required=''>
+          <input type="checkbox" name="like" value=true> <span class="likeBoth">Like both?</span>
+          <button type="submit">Get Price!</button>
+        </form>
+      </div>
+
       <h3>Compare and get relative likes</h3>
-      <form id="testForm" class="border">
-        <input type="text" name="stock" placeholder="goog" style="width: 100px" required=''>
-        <input type="text" name="stock" placeholder="msft" style="width: 100px" required=''>
-        <input type="checkbox" name="like" value=true> Like both?<br>
-        <button type="submit">Get Price!</button>
-      </form>
+      <div id="secondForm">      
+        <form id="testForm" class="border">
+          <input class="inputStock" type="text" name="stock" placeholder="goog" required=''>
+          <input class="inputStock" type="text" name="stock" placeholder="msft" required=''>
+          <input type="checkbox" name="like" value=true> <span class="likeBoth">Like both?</span>
+          <button type="submit">Get Price!</button>
+        </form>
+      </div>
       <code id='jsonResult'></code>
+      <footer>
+        Designed and Coded by: <a id="footerLink" href="https://www.linkedin.com/in/hunter-lacefield-871995115/">Hunter Lacefield</a>
+      </footer>
     </div>
-    <hr style='margin: 50px; margin-top: 200px'>
     <!-- Your web-app is https, so your scripts need to be too -->
-    <script src="https://code.jquery.com/jquery-2.2.1.min.js"
-            integrity="sha256-gvQgAFzTH6trSrAWoH1iPo9Xc96QxSZ3feW6kem+O00="
-            crossorigin="anonymous"></script>
-    <script>
-      $(function() {
-        $('#testForm').submit(function(e) {
-          $.ajax({
-            url: '/api/stock-prices',
-            type: 'get',
-            data: $('#testForm').serialize(),
-            success: function(data) {
-              $('#jsonResult').text(JSON.stringify(data));
-            }
-          });
-          e.preventDefault();
-        });
-        $('#testForm2').submit(function(e) {
-          $.ajax({
-            url: '/api/stock-prices',
-            type: 'get',
-            data: $('#testForm2').serialize(),
-            success: function(data) {
-              $('#jsonResult').text(JSON.stringify(data));
-            }
-          });
-          e.preventDefault();
-        });
-      });
-   </script>
+    <script
+      src="https://code.jquery.com/jquery-2.2.1.min.js"
+      integrity="sha256-gvQgAFzTH6trSrAWoH1iPo9Xc96QxSZ3feW6kem+O00="
+      crossorigin="anonymous"
+    ></script>;
+    
+    <!-- Move js to a different file for securite reasons and working with helmetJS CSP -->
+    <script type="module" src="../public/index.js"></script>
   </body>
 </html>

@@ -15,8 +15,11 @@ app.use(
     dnsPrefetchControl: false,
     contentSecurityPolicy: {
       directives: {
+        "img-src": [
+          " https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?ixid=MXwxMjA3fDB8MHxzZWFyY2h8MXx8c3RvY2slMjBtYXJrZXR8ZW58MHx8MHw%3D&ixlib=rb-1.2.1&w=1000&q=80",
+        ],
         // Allows loading of scripts and CSS from your server only.
-        scriptSrc: ["'self'"],
+        scriptSrc: ["'self'", "https://code.jquery.com/"],
         styleSrc: ["'self'"],
       },
     },
