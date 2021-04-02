@@ -4,7 +4,12 @@ const fetch = require("node-fetch"); // When using node fetch is not supported s
 
 module.exports = function (app) {
   let uri = process.env.STOCK_PRICE_CHECKER_MONGO_URI;
-  mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+  mongoose.connect(uri, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    useFindAndModify: false,
+    useCreateIndex: true,
+  });
   const Schema = mongoose.Schema;
 
   // Use the next four lines to see if you are conneted to mongoose correctly
